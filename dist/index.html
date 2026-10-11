@@ -3385,13 +3385,25 @@ function incomingRange(sk,stats,boss,opts={},load){
   return {min:Math.round(base*(sk.pmin/powerDivisor)*sk.hits*offenseState*elementalMult*(fixedPower?0.925:1)),max:Math.round(base*(sk.pmax/powerDivisor)*sk.hits*offenseState*elementalMult*(fixedPower?1.075:1)),element,gearProtection,factionProtection,elementalMult};
 }
 function outgoingElementNote(result,spell){
-  if(!result)return spell.type==='Debuff'?'Setup turn':'';
   const notes=[];
-  if(result.faction===1.25)notes.push(`${result.element} faction +25%`);
-  if(result.affinity==='weak')notes.push(`${result.element} weakness ×1.5 (provisional)`);
-  if(result.affinity==='resistant')notes.push(`${result.element} resistance ×0.5`);
-  if(result.affinity==='immune')notes.push(`${result.element} immunity ×0`);
-  return notes.join(' · ');
+  if(n(spell.mana)>0)notes.push(`${n(spell.mana)} mana`);
+  if(n(spell.turns)>1)notes.push(`${n(spell.turns)} turns`);
+  if(isDamageAbility(spell)){
+    if(n(spell.hits)>1)notes.push(`${n(spell.hits)} hits`);
+    if(n(spell.m1)>0)notes.push(`M1 ${n(spell.m1)}${spell.m1Source===M1_SOURCE?' (community)':''}`);
+  }else{
+    if(spell.type==='Debuff')notes.push('Setup turn');
+    const description=String(spell.notes||'').split(/\n|\.\s+/)[0].trim().replace(/\.$/,'');
+    if(description)notes.push(description.length>95?`${description.slice(0,92)}…`:description);
+    else if(spell.type==='Buff')notes.push('Buff / setup');
+  }
+  if(result){
+    if(result.faction===1.25)notes.push(`${result.element} faction +25%`);
+    if(result.affinity==='weak')notes.push(`${result.element} weakness ×1.5 (provisional)`);
+    if(result.affinity==='resistant')notes.push(`${result.element} resistance ×0.5`);
+    if(result.affinity==='immune')notes.push(`${result.element} immunity ×0`);
+  }
+  return notes.join(' · ')||'—';
 }
 function incomingElementNote(result,load){
   if(!result?.element)return'No elemental modifier';const notes=[];
@@ -3545,7 +3557,7 @@ function doAnalyze(){
     <div class="build-stat-grid">${['hp','mana','ward','att','mag','def','res','dex'].map(k=>`<div><b>${Math.round(n(stats[k])).toLocaleString()}</b><span>${k==='ward'?`Ward · +${n(stats.wardPct).toFixed(1)}%`:STAT_LABEL[k]}</span></div>`).join('')}</div></details>
    </div>
    <div class="grid" style="margin-top:12px">
-    <div class="card"><h2>Your actions → ${esc(boss.name)}</h2><div class="scroll"><table><thead><tr><th>Spell/skill</th><th>Predicted damage</th><th>Per turn</th><th>Notes</th></tr></thead><tbody>
+    <div class="card"><h2>Your actions → ${esc(boss.name)}</h2><div class="scroll"><table><thead><tr><th>Spell/skill</th><th>Predicted damage</th><th>Damage/turn</th><th>Notes</th></tr></thead><tbody>
     ${offense.map(x=>`<tr><td><b>${esc(x.s.name)}</b><div class="source">${esc(x.r?.element||x.s.element||x.s.type)}</div></td><td>${x.r?`${x.r.min.toLocaleString()}–${x.r.max.toLocaleString()}`:unavailableOutgoingReason(x.s,boss)}</td><td>${x.r?`${Math.round(((x.r.min+x.r.max)/2)/x.s.turns).toLocaleString()}`:'—'}</td><td>${esc(outgoingElementNote(x.r,x.s))}</td></tr>`).join('')}
     </tbody></table></div>${best?`<div class="note good" style="margin-top:9px">Highest modeled raw damage per turn in this selected bar: <b>${esc(best.s.name)}</b>. This does not yet account for Weaved Elements sequencing, status proc value or setup-turn payoff.</div>`:''}</div>
     <div class="card"><h2>${esc(boss.name)} → you</h2><div class="scroll"><table><thead><tr><th>Boss action</th><th>Predicted damage</th><th>Uses</th><th>Elemental protection</th></tr></thead><tbody>
