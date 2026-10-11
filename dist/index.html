@@ -223,7 +223,7 @@ html:has(.ability-picker-dialog[open]),body:has(.ability-picker-dialog[open]){ov
         <div><label>Codex power min (per hit)</label><input id="s_pmin" type="number" step="1" value="0"></div>
         <div><label>Codex power max (per hit)</label><input id="s_pmax" type="number" step="1" value="0"></div>
         <div><label>Penetration M1 (leave blank if unknown)</label><input id="s_m1" type="number" min="0.01" step="any" placeholder="Unknown"></div>
-        <div><label>Damage stat</label><select id="s_stat"><option value="MAG">MAG</option><option value="ATT">ATT</option><option value="NONE">None</option></select></div>
+        <div><label>Damage stat</label><select id="s_stat"><option value="MAG">MAG</option><option value="ATT">ATT</option><option value="HYBRID">Higher ATT/MAG (unmodeled)</option><option value="COMPOSITE">Both ATT and MAG (unmodeled)</option><option value="NONE">None</option></select></div>
         <div><label>Target defense</label><select id="s_target"><option value="AUTO">Automatic</option><option value="DEF">DEF</option><option value="RES">RES</option></select></div>
         <div><label>Source</label><select id="s_source"><option>Official Codex</option><option>Screenshot verified</option><option>Community formula</option><option>Manual</option></select></div>
       </div>
@@ -3480,6 +3480,8 @@ function isDamageAbility(spell){
 }
 function unavailableOutgoingReason(spell,boss){
   if(!isDamageAbility(spell))return 'Utility / setup';
+  if(spell.stat==='HYBRID')return 'Uses higher ATT or MAG · hybrid damage not modeled';
+  if(spell.stat==='COMPOSITE')return 'Uses ATT and MAG · composite damage not modeled';
   const missing=[];
   if(spell.stat!=='ATT'&&spell.stat!=='MAG')missing.push('Damage stat unknown');
   if(!(n(spell.pmax)>0))missing.push('Spell power unknown');
@@ -3502,6 +3504,7 @@ function modeledSpell(spell){
   const catalogLinked=!!(spell.catalogId||spell.autoClassManaged||spell.autoBaseline);
   const catalog=catalogLinked?ornaCatalogs?.abilities?.find(x=>spell.catalogId?x.id===spell.catalogId:abilityKey(x.name)===abilityKey(spell.name)):null;
   if(catalog){
+    if((spell.autoClassManaged||spell.autoBaseline)&&n(catalog.pmax)>0&&['ATT','MAG','HYBRID','COMPOSITE'].includes(catalog.stat))modeled.stat=catalog.stat;
     if(!(n(modeled.pmax)>0)&&n(catalog.pmax)>0)modeled.pmax=n(catalog.pmax);
     if(!(n(modeled.pmin)>0)&&n(catalog.pmin)>0)modeled.pmin=n(catalog.pmin);
     if((modeled.stat==='NONE'||!modeled.stat)&&n(catalog.pmax)>0&&['MAG','ATT'].includes(catalog.stat))modeled.stat=catalog.stat;
@@ -3510,7 +3513,7 @@ function modeledSpell(spell){
   return modeled;
 }
 function damageRange(spell,stats,boss,opts={},load){
-  if(!spell||spell.stat==='NONE'||!spell.pmax)return null;
+  if(!spell||!['ATT','MAG'].includes(spell.stat)||!spell.pmax)return null;
   const m1=Number(spell.m1);
   if(!Number.isFinite(m1)||m1<=0)return null;
   const offense=spell.stat==='ATT'?stats.att:stats.mag;
