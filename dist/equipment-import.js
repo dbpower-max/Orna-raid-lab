@@ -89,6 +89,11 @@ function cropRegions(drafts,ocrLines,width,height){
     return{x:0,y:top,width,height:bottom-top};
   });
 }
-function mergeObserved(item,draft){const next=structuredClone(item);next.level=Number(draft.level);next.name=draft.name.trim();next.qualityLabelOverride=draft.quality;next.qualityPctKnown=false;next.observedByLevel={...(next.observedByLevel||{})};const prior=next.observedByLevel[next.level]||(Number(next.observedLevel)===next.level?next.observedStats:{});next.observedByLevel[next.level]={...(prior||{}),...draft.stats};if(draft.element){next.element=draft.element;if(next.slot==='Weapon')next.attackElement=draft.element;else next.resistElements=[draft.element]}next.observedBonusesByLevel={...(next.observedBonusesByLevel||{}),[next.level]:{...(next.observedBonusesByLevel?.[next.level]||{}),...(draft.bonuses||{})}};next.screenshotDetails=draft.details;next.screenshotImport={file:draft.fileName||'',reviewedAt:new Date().toISOString(),raw:draft.raw};return next}
+function mergeObserved(item,draft){const next=structuredClone(item);next.level=Number(draft.level);next.name=draft.name.trim();next.qualityLabelOverride=draft.quality||item.qualityLabelOverride;
+const priorLabel=String(item.qualityLabelOverride||'').trim().toLowerCase();
+const newLabel=String(draft.quality||'').trim().toLowerCase();
+// A screenshot supplies a quality label, not an exact quality percentage.
+// Keep a previously verified percentage unless the label actually conflicts.
+next.qualityPctKnown=!!item.qualityPctKnown&&(!priorLabel||!newLabel||priorLabel===newLabel);next.observedByLevel={...(next.observedByLevel||{})};const prior=next.observedByLevel[next.level]||(Number(next.observedLevel)===next.level?next.observedStats:{});next.observedByLevel[next.level]={...(prior||{}),...draft.stats};if(draft.element){next.element=draft.element;if(next.slot==='Weapon')next.attackElement=draft.element;else next.resistElements=[draft.element]}next.observedBonusesByLevel={...(next.observedBonusesByLevel||{}),[next.level]:{...(next.observedBonusesByLevel?.[next.level]||{}),...(draft.bonuses||{})}};next.screenshotDetails=draft.details;next.screenshotImport={file:draft.fileName||'',reviewedAt:new Date().toISOString(),raw:draft.raw};return next}
 const api={cropRegions,reviewFlags,approve,bonusFields,parseBonuses,cleanDetails,parse,parseStats,candidates,plan,validate,mergeObserved,normalize};root.OrnaGearImport=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window==='undefined'?globalThis:window);
