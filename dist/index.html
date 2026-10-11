@@ -378,7 +378,7 @@ function compressImage(file,cb){
     im.src=e.target.result;
   };reader.readAsDataURL(file);
 }
-const DATA_FEED_REVISION=26;
+const DATA_FEED_REVISION=30;
 const starter=()=>({
   "meta": {
     "version": "0.2",
@@ -2607,6 +2607,22 @@ function syncAutomaticSpells(){
     state.spells.push({...JSON.parse(JSON.stringify(base)),...catalogSpellModel(base),source:'Automatic · Official Orna Codex',autoBaseline:true,autoClass:'Spellweaver',image:''});
   });
 }
+// Preserve local boss edits while applying newer canonical feed values.
+// When a value is still equal to its last canonical predecessor, it is safe
+// to upgrade; otherwise keep the saved value (including an explicit null).
+function mergeBossFeedPatch(boss,patch){
+  const previous={};
+  FEED_PATCHES.forEach(prior=>{
+    if(prior.kind==='boss'&&prior.id===patch.id&&prior.revision<patch.revision)
+      Object.assign(previous,prior.value);
+  });
+  Object.entries(patch.value).forEach(([key,value])=>{
+    const present=Object.prototype.hasOwnProperty.call(boss,key);
+    const unchanged=Object.prototype.hasOwnProperty.call(previous,key)&&
+      JSON.stringify(boss[key])===JSON.stringify(previous[key]);
+    if(!present||unchanged)boss[key]=JSON.parse(JSON.stringify(value));
+  });
+}
 function applyFeedUpdates(saved){
   if(!saved||!saved.character||!Array.isArray(saved.gear)||!Array.isArray(saved.spells))saved=starter();
   saved.meta=saved.meta||{};
@@ -2650,7 +2666,7 @@ function applyFeedUpdates(saved){
     if(p.kind==='boss'){
       saved.bosses=Array.isArray(saved.bosses)?saved.bosses:[];
       const boss=saved.bosses.find(x=>x.id===p.id);
-      if(boss)Object.assign(boss,JSON.parse(JSON.stringify(p.value)));
+      if(boss)mergeBossFeedPatch(boss,p);
       else saved.bosses.push(JSON.parse(JSON.stringify(p.value)));
     }
     if(p.kind==='videoBattle'){
@@ -2684,7 +2700,7 @@ function applyFeedUpdates(saved){
       spell.m1Source=published===null?'':M1_SOURCE;
     }
   });
-  saved.meta.feedRevision=DATA_FEED_REVISION;
+  saved.meta.feedRevision=Math.max(applied,DATA_FEED_REVISION);
   saved.meta.feedUpdatedAt='2026-09-28';
   return saved;
 }
