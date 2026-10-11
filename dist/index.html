@@ -3347,8 +3347,27 @@ function damageRange(spell,stats,boss,opts={},load){
   const max=base*(spell.pmax/powerDivisor)*spell.hits*offenseState*faction*affinityMult*(fixedPower?1.075:1);
   return {min:Math.max(0,Math.round(min)),max:Math.max(0,Math.round(max)),faction,element,affinity,affinityMult};
 }
+function unavailableIncomingReason(skill,boss){
+  if(skill.utility)return 'Utility / status';
+  const missing=[];
+  const stat=skill.type==='MAG'?'mag':skill.type==='ATT'?'att':null;
+  if(!stat)missing.push('Attack type unknown');
+  else if(boss[stat]===null||boss[stat]===undefined||!Number.isFinite(Number(boss[stat])))missing.push(`Boss ${stat.toUpperCase()} unknown`);
+  if(!(Number(skill.m1)>0))missing.push('Move M1 unknown');
+  if(!(n(skill.pmax)>0))missing.push('Move power unknown');
+  return missing.length?missing.join(' · '):'Damage unavailable';
+}
+function incomingElementProtection(skill,load){
+  if(skill.utility)return '—';
+  const element=normalizeElement(skill.element);
+  if(!element)return 'Element unspecified';
+  const gearProtection=loadoutElementProtections(load).some(x=>x.element===element);
+  const factionProtection=element===factionElement();
+  return incomingElementNote({element,gearProtection,factionProtection},load);
+}
 function incomingRange(sk,stats,boss,opts={},load){
   if(sk.utility)return null;
+  if(sk.type!=='MAG'&&sk.type!=='ATT')return null;
   const bossOffense=sk.type==='MAG'?boss.mag:boss.att;
   if(bossOffense===null||bossOffense===undefined||!Number.isFinite(Number(bossOffense)))return null;
   const m1=Number(sk.m1);
@@ -3530,7 +3549,7 @@ function doAnalyze(){
     ${offense.map(x=>`<tr><td><b>${esc(x.s.name)}</b><div class="source">${esc(x.r?.element||x.s.element||x.s.type)}</div></td><td>${x.r?`${x.r.min.toLocaleString()}–${x.r.max.toLocaleString()}`:unavailableOutgoingReason(x.s,boss)}</td><td>${x.r?`${Math.round(((x.r.min+x.r.max)/2)/x.s.turns).toLocaleString()}`:'—'}</td><td>${esc(outgoingElementNote(x.r,x.s))}</td></tr>`).join('')}
     </tbody></table></div>${best?`<div class="note good" style="margin-top:9px">Highest modeled raw damage per turn in this selected bar: <b>${esc(best.s.name)}</b>. This does not yet account for Weaved Elements sequencing, status proc value or setup-turn payoff.</div>`:''}</div>
     <div class="card"><h2>${esc(boss.name)} → you</h2><div class="scroll"><table><thead><tr><th>Boss action</th><th>Predicted damage</th><th>Uses</th><th>Elemental protection</th></tr></thead><tbody>
-    ${boss.skills.map(sk=>{const r=incomingRange(sk,stats,boss,opts,load);return `<tr><td><b>${esc(sk.name)}</b><div class="source">${esc(sk.element)}</div></td><td>${sk.utility?'Utility / status':r?`${r.min.toLocaleString()}–${r.max.toLocaleString()}`:'M1 / power unknown'}</td><td>${sk.utility?'—':sk.type==='MAG'?'RES':'DEF'}</td><td>${sk.utility||!r?'—':esc(incomingElementNote(r,load))}</td></tr>`}).join('')}</tbody></table><div class="source">Boss ATT/MAG and move coefficients are provisional until checked against battle hits.</div></div>
+    ${boss.skills.map(sk=>{const r=incomingRange(sk,stats,boss,opts,load);return `<tr><td><b>${esc(sk.name)}</b><div class="source">${esc(sk.element)}</div></td><td>${sk.utility?'Utility / status':r?`${r.min.toLocaleString()}–${r.max.toLocaleString()}`:esc(unavailableIncomingReason(sk,boss))}</td><td>${sk.utility?'—':sk.type==='MAG'?'RES':sk.type==='ATT'?'DEF':'Unknown'}</td><td>${esc(incomingElementProtection(sk,load))}</td></tr>`}).join('')}</tbody></table><div class="source">Boss ATT/MAG and move coefficients are provisional until checked against battle hits.</div></div>
    </div>
    <details class="card raid-deeper"><summary>Status effects and protection</summary>${renderBossStatusGuide(boss)}</details>
    <details class="card raid-deeper"><summary>Recommendations</summary>${recommend(load,sl,boss,stats,opts,abilities)}</details>`;
