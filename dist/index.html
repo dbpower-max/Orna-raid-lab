@@ -2582,7 +2582,12 @@ function syncAutomaticSpells(){
     });
     desired.forEach((sources,abilityId)=>{
       const ability=ornaCatalogs.abilities.find(a=>a.id===abilityId);if(!ability)return;
-      const existing=state.spells.find(s=>s.catalogId===abilityId||abilityKey(s.name)===abilityKey(ability.name));
+      // Catalog ID is the identity. Normalized display names can collide
+      // (Haste/Haste+, or distinct Poisonstrike catalog variants).
+      const existing=state.spells.find(s=>s.catalogId===abilityId)||
+        (ornaCatalogs.abilities.filter(a=>abilityKey(a.name)===abilityKey(ability.name)).length===1
+          ?state.spells.find(s=>!s.catalogId&&abilityKey(s.name)===abilityKey(ability.name))
+          :null);
       if(existing){
         existing.catalogId=abilityId;existing.codexUrl=existing.codexUrl||ability.url;existing.classUnlocked=true;existing.classSourceIds=sources.classIds;existing.classSourceNames=sources.classNames;
         if(existing.autoBaseline||existing.autoClassManaged){
