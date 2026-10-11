@@ -2567,7 +2567,7 @@ function targetDefenseForSpell(spell){
   return spell.stat==='ATT'||/^(magicstrikes|magicsword|magichammer)/.test(abilityKey(spell.name))?'DEF':'RES';
 }
 const DEFAULT_CLASS_IDS=[];
-function spellFromCatalog(ability,classIds,classNames){return{id:uid('s'),catalogId:ability.id,codexUrl:ability.url,name:ability.name,tier:ability.tier,type:ability.type,element:ability.element||'',mana:n(ability.mana),turns:n(ability.turns,1),hits:n(ability.hits,1),pmin:n(ability.pmin),pmax:n(ability.pmax),...catalogSpellModel(ability),stat:ability.stat||'NONE',source:`Automatic class unlock · ${classNames.join(', ')}`,notes:ability.notes||'',image:ability.image||'',autoClassManaged:true,classUnlocked:true,classSourceIds:classIds,classSourceNames:classNames}}
+function spellFromCatalog(ability,classIds,classNames){return{id:uid('s'),catalogId:ability.id,codexUrl:ability.url,name:ability.name,tier:ability.tier,type:ability.type,element:ability.element||'',mana:n(ability.mana),turns:n(ability.turns,1),hits:n(ability.hits,1),pmin:n(ability.pmin),pmax:n(ability.pmax),...catalogSpellModel(ability),stat:ability.stat||'NONE',source:`Automatic class unlock · ${classNames.join(', ')}`,notes:ability.notes||'',image:ability.image||'',autoClassManaged:true,autoBaseline:false,classUnlocked:true,classSourceIds:classIds,classSourceNames:classNames}}
 function syncAutomaticSpells(){
   if(ornaCatalogs?.classes?.length){
     const selected=new Set((state.character.unlockedClassIds||DEFAULT_CLASS_IDS).map(String)),desired=new Map();
