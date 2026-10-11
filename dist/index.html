@@ -2910,7 +2910,7 @@ function loadoutNeedsMeasurement(load){
   return !matchingCoreAnchors(c).some(a=>n(a.level)===n(c.level)&&a.measurementType?.startsWith('unequipped'))&&!measuredSnapshotForLoadout(load);
 }
 function statText(st){return ['hp','mana','att','mag','def','res','dex','ward'].filter(k=>n(st[k])!==0).map(k=>k==='ward'?`Ward ${st[k]}%`:`${STAT_LABEL[k]} ${st[k]}`).join(' · ')||'No numerical stats entered'}
-function renderAll(){syncAutomaticSpells();renderCharacter();renderGear();renderSpells();renderGearLoadouts();renderSpellLoadouts();renderRaids();renderBattleLog();renderData();const feed=$('#feedStatus');if(feed)feed.textContent=`Chat data · ${state.meta?.feedUpdatedAt||'current'}`;save()}
+function renderAll(){syncAutomaticSpells();renderCharacter();renderGear();renderSpells();renderGearLoadouts();renderSpellLoadouts();renderRaids();renderBattleLog();renderData();const feed=$('#feedStatus');if(feed)feed.textContent=`Chat data · ${state.meta?.feedUpdatedAt||'current'}`;return save()}
 function nav(tab){$$('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));$$('.section').forEach(s=>s.classList.toggle('active',s.id===tab))}
 $('#tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(b)nav(b.dataset.tab)});
 $$('[data-close]').forEach(b=>b.addEventListener('click',()=>document.getElementById(b.dataset.close).close()));
@@ -4430,7 +4430,53 @@ function renderData(){
 function exportDB(){
   const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Orna_Raid_Lab_database.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)
 }
-function importDB(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!x.character||!Array.isArray(x.gear)||!Array.isArray(x.spells))throw Error('Not an Orna Raid Lab database');state=applyFeedUpdates(x);save();renderAll();alert('Database imported and current chat updates applied.')}catch(err){alert('Import failed: '+err.message)}};r.readAsText(f)}
+// Validate exported structure before replacing the active in-memory database.
+function prepareDatabaseImport(payload){
+  if(!payload||typeof payload!=='object'||Array.isArray(payload)||
+     !payload.character||typeof payload.character!=='object'||Array.isArray(payload.character)||
+     !payload.character.core||typeof payload.character.core!=='object'||Array.isArray(payload.character.core))
+    throw Error('Invalid character/core data.');
+  if(n(payload.meta?.feedRevision,0)>DATA_FEED_REVISION)
+    throw Error('This backup was created by a newer Raid Lab version. Update the website before importing it.');
+  for(const section of ['gear','spells','gearLoadouts','spellLoadouts','bosses']){
+    const rows=payload[section];
+    if(!Array.isArray(rows))throw Error('Missing or invalid '+section+' list.');
+    const ids=new Set();
+    rows.forEach((row,index)=>{
+      if(!row||typeof row!=='object'||Array.isArray(row)||
+        typeof row.id!=='string'||!row.id.trim())throw Error('Invalid '+section+' entry '+(index+1)+'.');
+      if(ids.has(row.id))throw Error('Duplicate '+section+' ID: '+row.id);
+      ids.add(row.id);
+    });
+  }
+  if(payload.gearLoadouts.some(x=>!x.slots||typeof x.slots!=='object'||Array.isArray(x.slots)))
+    throw Error('Invalid gear loadout slots.');
+  if(payload.spellLoadouts.some(x=>!Array.isArray(x.spellIds)))
+    throw Error('Invalid spell loadout slots.');
+  if(payload.bosses.some(x=>!Array.isArray(x.skills)))
+    throw Error('Invalid boss skills.');
+  // Migration receives an independent copy: the uploaded file remains unmodified.
+  return applyFeedUpdates(JSON.parse(JSON.stringify(payload)));
+}
+function importDB(event){
+  const file=event.target.files?.[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onerror=()=>alert('Import failed: Unable to read the selected file.');
+  reader.onload=()=>{
+    const previous=state;
+    try{
+      const candidate=prepareDatabaseImport(JSON.parse(reader.result));
+      state=candidate;
+      if(!renderAll())throw Error('Browser storage could not save the imported database.');
+      alert('Database imported and saved successfully.');
+    }catch(error){
+      state=previous;
+      try{renderAll()}catch(restoreError){console.error('Unable to restore previous view after failed import',restoreError)}
+      alert('Import failed; previous database retained. '+error.message);
+    }
+  };
+  reader.readAsText(file);
+}
 
 function registerModelTools(){
   const context=document.modelContext;
