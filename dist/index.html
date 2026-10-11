@@ -3309,6 +3309,26 @@ function unavailableOutgoingReason(spell,boss){
   if(value===null||value===undefined||!Number.isFinite(Number(value)))missing.push(`Boss ${defense} unknown`);
   return missing.length?missing.join(' · '):'Damage unavailable';
 }
+// Resolve published coefficients for older saved spells without modifying personal data.
+// Catalog-linked spells may also use missing power fields from the bundled Codex catalog.
+function modeledSpell(spell){
+  if(!spell)return spell;
+  const modeled={...spell};
+  if(!isDamageAbility(spell))return modeled;
+  const published=publishedSpellM1(spell.name);
+  if((modeled.m1===null||modeled.m1===undefined||modeled.m1==='')&&published!==null){
+    modeled.m1=published;modeled.m1Source=M1_SOURCE;
+  }
+  const catalogLinked=!!(spell.catalogId||spell.autoClassManaged||spell.autoBaseline);
+  const catalog=catalogLinked?ornaCatalogs?.abilities?.find(x=>spell.catalogId?x.id===spell.catalogId:abilityKey(x.name)===abilityKey(spell.name)):null;
+  if(catalog){
+    if(!(n(modeled.pmax)>0)&&n(catalog.pmax)>0)modeled.pmax=n(catalog.pmax);
+    if(!(n(modeled.pmin)>0)&&n(catalog.pmin)>0)modeled.pmin=n(catalog.pmin);
+    if((modeled.stat==='NONE'||!modeled.stat)&&n(catalog.pmax)>0&&['MAG','ATT'].includes(catalog.stat))modeled.stat=catalog.stat;
+    if(!modeled.powerModel)modeled.powerModel='codexTotal';
+  }
+  return modeled;
+}
 function damageRange(spell,stats,boss,opts={},load){
   if(!spell||spell.stat==='NONE'||!spell.pmax)return null;
   const m1=Number(spell.m1);
@@ -3490,7 +3510,7 @@ function doAnalyze(){
   if(state.character.coreStatus==='needsCalibration'||loadoutNeedsMeasurement(load)){$('#raidResults').innerHTML=`<div class="note warn">${loadoutNeedsMeasurement(load)?`Upload a matching Status screenshot for ${esc(load.name)} at level ${state.character.level} before modeling this raid.`:esc(coreStatusNote(state.character))}</div>`;return}
   const stats=characterTotals(load), opts={attBuff:combatMultiplier('a_att'),magBuff:combatMultiplier('a_mag'),defBuff:combatMultiplier('a_def'),resBuff:combatMultiplier('a_rbuff'),bossAtt:combatMultiplier('a_batt'),bossMag:combatMultiplier('a_bmag'),defDebuff:combatMultiplier('a_bdef'),resDebuff:combatMultiplier('a_res')};
   const granted=grantedAbilitiesForLoadout(load),abilities=effectiveLoadoutAbilities(load,sl);
-  const offense=abilities.map(s=>({s,r:damageRange(s,stats,boss,opts,load)})),protections=loadoutElementProtections(load),attackElement=weaponAttackElement(load),status=loadoutStatusEffects(load);
+  const offense=abilities.map(original=>{const s=modeledSpell(original);return{s,r:damageRange(s,stats,boss,opts,load)}}),protections=loadoutElementProtections(load),attackElement=weaponAttackElement(load),status=loadoutStatusEffects(load);
   const coreMissing=['hp','mana','att','mag','def','res'].every(k=>n(state.character.core[k])===0);
   const damaging=offense.filter(x=>x.r);
   const best=damaging.slice().sort((a,b)=>((b.r.min+b.r.max)/2/b.s.turns)-((a.r.min+a.r.max)/2/a.s.turns))[0];
