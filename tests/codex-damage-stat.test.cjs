@@ -75,4 +75,16 @@ assert.match(runtime.unavailableOutgoingReason(beast,boss),/composite damage not
 assert.match(html,/value="HYBRID"/);
 assert.match(html,/value="COMPOSITE"/);
 
+// Codex Magic Sword, Magic Hammer and Magic Strikes are Spells using MAG
+// despite the Physical element. Their default target must be RES, not DEF.
+const targetFn=between(html,'function targetDefenseForSpell(', 'const DEFAULT_CLASS_IDS=');
+const defenseFor=new Function(targetFn+'return targetDefenseForSpell')();
+for(const name of ['Magic Strikes','Magic Sword','Magic Hammer']){
+  assert.equal(defenseFor({name,stat:'MAG',element:'Physical'}),'RES',name);
+}
+assert.equal(defenseFor({name:'Earthstrike',stat:'ATT',element:'Earthen'}),'DEF');
+assert.equal(defenseFor({name:'Faith',stat:'MAG',element:'Holy'}),'RES');
+assert.equal(defenseFor({name:'Magic Strikes',stat:'MAG',targetDefense:'DEF'}),'DEF',
+  'Explicit manually selected target remains respected');
+assert.equal(defenseFor({name:'Earthstrike',stat:'ATT',targetDefense:'RES'}),'RES');
 console.log('PASS: 1,005 Codex abilities consistent with generator; all special cases and conservative model behavior verified');
