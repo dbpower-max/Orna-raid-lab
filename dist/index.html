@@ -2732,12 +2732,23 @@ function loadOrnaCatalogs(){
   return catalogPromise;
 }
 function searchKey(value){return String(value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim()}
+const catalogSearchCache=new WeakMap();
+function cachedCatalogSearch(row,kind){
+  const existing=catalogSearchCache.get(row);
+  if(existing?.kind===kind)return existing;
+  const hay=kind==='gear'?
+    [row.name,row.slot,row.rarity,row.useableBy,row.weaponType,row.element,row.abilityName,row.notes]:
+    [row.name,row.type,row.element,row.targets,row.learnedBy?.join(' '),row.gearSources?.join(' '),row.notes];
+  const entry={kind,all:searchKey(hay.join(' ')),name:searchKey(row.name)};
+  catalogSearchCache.set(row,entry);
+  return entry;
+}
 function catalogMatches(rows,query,kind){
-  const terms=searchKey(query).split(' ').filter(Boolean);if(!terms.length)return[];
+  const q=searchKey(query),terms=q.split(' ').filter(Boolean);if(!terms.length)return[];
   return rows.map(row=>{
-    const hay=kind==='gear'?[row.name,row.slot,row.rarity,row.useableBy,row.weaponType,row.element,row.abilityName,row.notes]:[row.name,row.type,row.element,row.targets,row.learnedBy?.join(' '),row.gearSources?.join(' '),row.notes];
-    const all=searchKey(hay.join(' '));if(!terms.every(term=>all.includes(term)))return null;
-    const name=searchKey(row.name),q=searchKey(query);const rank=name===q?0:name.startsWith(q)?1:name.includes(q)?2:3;
+    const {all,name}=cachedCatalogSearch(row,kind);
+    if(!terms.every(term=>all.includes(term)))return null;
+    const rank=name===q?0:name.startsWith(q)?1:name.includes(q)?2:3;
     return {row,rank};
   }).filter(Boolean).sort((a,b)=>a.rank-b.rank||a.row.tier-b.row.tier||a.row.name.localeCompare(b.row.name)).slice(0,30).map(x=>x.row);
 }
