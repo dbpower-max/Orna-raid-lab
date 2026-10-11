@@ -1,0 +1,15 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),p=require('../dist/equipment-import.js');
+const catalog=JSON.parse(fs.readFileSync(require('node:path').join(__dirname,'../dist/orna-catalogs.json'))).gear;
+const raw=`Legendary Balor Dagger (7) ★6\nLevel 3\nAtt: 300 Mag: 40 Dex: 14 FIRE\nStilettos ★7\nAbility: Doublecut\nSwiftly attack twice, dealing up to double damage.\nAtt: 162 Def: −22 Res: -22 Dex: 22 Ward: 10%\nTwo handed`;
+const [d,st]=p.parse(raw,catalog);assert.equal(d.name,'Balor Dagger');assert.equal(d.level,3);assert.equal(d.quantity,7);assert.equal(d.element,'Fire');assert.equal(st.stats.def,-22);assert.equal(st.stats.res,-22);
+assert.deepEqual(p.parseStats('Magic\n236\nDefense: -22\nMana 10'),{mana:10,mag:236,def:-22});
+const item={id:'owned',catalogId:d.catalogId,name:'Legendary Balor Dagger',level:2,qualityLabelOverride:'Legendary',slot:'Weapon',adornments:[{name:'Existing jewel',stats:{mag:2}}],observedByLevel:{2:{att:231,mag:33}},notes:'keep'};
+assert.equal(p.plan(d,[item]).action,'update');assert.equal(p.plan(d,[item]).targetId,'owned');assert.equal(p.plan(d,[item,{...item,id:'second'}]).targetId,'');
+Object.assign(d,p.plan(d,[item]));assert(p.validate([d],[item],catalog).some(x=>x.includes('confirm review')));d.reviewed=true;assert.deepEqual(p.validate([d],[item],catalog),[]);
+let merged=p.mergeObserved(item,d);assert.equal(merged.id,item.id);assert.deepEqual(merged.adornments,item.adornments);assert.deepEqual(merged.observedByLevel[2],item.observedByLevel[2]);assert.equal(merged.observedByLevel[3].att,300);assert.equal(item.level,2);
+const partial={...d,level:2,stats:{att:250}};merged=p.mergeObserved(item,partial);assert.equal(merged.observedByLevel[2].mag,33);
+assert(p.validate([d,{...d}],[item],catalog).some(x=>x.includes('same copy')));
+const bad=p.parse('Legendary Black Witch Staff\nlevels\nMag: 390',catalog)[0];assert.equal(bad.level,'');assert(p.validate([{...bad,action:'add',reviewed:true}],[],catalog).some(x=>x.includes('level')));
+const detail=p.parse('Legendary\nBlack Witch Staff\nLevel 6\nMagic: 390\nAttack: 43\nEXP Bonus: +26%\nDARK',catalog);assert.equal(detail.length,1);assert.equal(detail[0].quality,'Legendary');assert.equal(detail[0].level,6);assert.equal(detail[0].stats.mag,390);
+const desc=p.parse('Chained Shadeblades\nAbility: Slice\nDeals damage and may cause bleeding. Additionally, it\nmay hit an additional opponent.\nAtt: 170 Dex: 20 Ward: 23%',catalog);assert.equal(desc.length,1);assert.equal(desc[0].stats.att,170);
+console.log('PASS: parsing, detail/list formats, duplicate selection, review gates, preservation, duplicate-target protection.');

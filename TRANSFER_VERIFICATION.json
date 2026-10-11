@@ -1,0 +1,28 @@
+{
+  "publishedVersion": 79,
+  "sourceCommit": "8404947ee843563d4acc4e55d93daef0cb281ea0",
+  "personalFeedEntriesRemoved": 45,
+  "applicationDifferences": "Personal seed, personal update feed, personal migration fixtures and fallback player labels only.",
+  "unchangedFiles": [
+    "dist/equipment-import.js",
+    "dist/orna-catalogs.json",
+    "scripts/build-orna-catalogs.mjs",
+    "tests/equipment-import.test.cjs",
+    "tests/equipment-import-workflow.test.cjs"
+  ],
+  "storageKey": "ornaRaidLab_v02",
+  "checks": {
+    "syntax": true,
+    "redactionOnlyDiff": true,
+    "savedStateMigration": true,
+    "equipmentImportTests": true
+  },
+  "sha256": {
+    "dist/index.html": "acdb1bf53f1099e7f43c959a4bb264fdb2a59e9d4dd287455593d293bfcbb2c3",
+    "dist/equipment-import.js": "9df84aaacc54268f7fabe8c2bcc529fbeb233e65cc26e6a305c510374ef53e3d",
+    "dist/orna-catalogs.json": "addd883fc72dd6568ebc0c82e0816d94fc72e89da154564be16740372e7e6877",
+    "scripts/build-orna-catalogs.mjs": "a8e9e8dc92a2bd2ff76bfc288a3c9a6f73475af819af34dde0631a484c36ba86",
+    "tests/equipment-import.test.cjs": "53038aba3b0ea966fac5854fcd93ad8fdfac98aa05873453c58771e80e467b7a",
+    "tests/equipment-import-workflow.test.cjs": "6ef78dba225c35eed5fe45e4bd0ad2aa76516d39902ee425bcf5e91af723b58b"
+  }
+}
