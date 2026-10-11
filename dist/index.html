@@ -2568,6 +2568,18 @@ function targetDefenseForSpell(spell){
 }
 const DEFAULT_CLASS_IDS=[];
 function spellFromCatalog(ability,classIds,classNames){return{id:uid('s'),catalogId:ability.id,codexUrl:ability.url,name:ability.name,tier:ability.tier,type:ability.type,element:ability.element||'',mana:n(ability.mana),turns:n(ability.turns,1),hits:n(ability.hits,1),pmin:n(ability.pmin),pmax:n(ability.pmax),...catalogSpellModel(ability),stat:ability.stat||'NONE',source:`Automatic class unlock · ${classNames.join(', ')}`,notes:ability.notes||'',image:ability.image||'',autoClassManaged:true,autoBaseline:false,classUnlocked:true,classSourceIds:classIds,classSourceNames:classNames}}
+// Switching unlocked classes may remove only untouched, unused automatic entries.
+// Keep user-edited records and spells equipped in a saved spell loadout.
+function shouldRetainFormerClassSpell(spell,abilityId){
+  if((state.spellLoadouts||[]).some(load=>(load.spellIds||[]).includes(spell.id)))return true;
+  const catalog=ornaCatalogs?.abilities?.find(a=>a.id===abilityId);
+  if(!catalog)return true; // Unknown origin: never guess that a record is disposable.
+  if(['DEF','RES'].includes(spell.targetDefense)||spell.m1Source==='Manual')return true;
+  const textFields=['name','type','element','stat','notes','image'];
+  if(textFields.some(key=>String(spell[key]??'')!==String(catalog[key]??'')))return true;
+  const numericFields=['tier','mana','turns','hits','pmin','pmax'];
+  return numericFields.some(key=>n(spell[key])!==n(catalog[key]));
+}
 function syncAutomaticSpells(){
   if(ornaCatalogs?.classes?.length){
     const selected=new Set((state.character.unlockedClassIds||DEFAULT_CLASS_IDS).map(String)),desired=new Map();
@@ -2576,7 +2588,10 @@ function syncAutomaticSpells(){
     }));
     state.spells=state.spells.filter(spell=>{
       const abilityId=spell.catalogId||ornaCatalogs.abilities.find(a=>abilityKey(a.name)===abilityKey(spell.name))?.id;
-      if(spell.autoClassManaged&&!desired.has(abilityId))return false;
+      if(spell.autoClassManaged&&!desired.has(abilityId)){
+        if(!shouldRetainFormerClassSpell(spell,abilityId))return false;
+        spell.autoClassManaged=false; // Preserve edited or equipped abilities as user-owned.
+      }
       if(!desired.has(abilityId)){delete spell.classUnlocked;delete spell.classSourceIds;delete spell.classSourceNames}
       return true;
     });
@@ -3173,7 +3188,7 @@ $('#spellForm').addEventListener('submit',e=>{
   const catalog=selectedSpellCatalog||prior||{};
   const name=$('#s_name').value.trim(),m1Input=$('#s_m1').value.trim(),m1=m1Input?Number(m1Input):null;
   const published=publishedSpellM1(name),fromCatalog=!!selectedSpellCatalog?.name;
-  const s={id,name,tier:n($('#s_tier').value),type:$('#s_type').value,element:$('#s_element').value.trim(),mana:n($('#s_mana').value),turns:n($('#s_turns').value,1),hits:n($('#s_hits').value,1),pmin:n($('#s_pmin').value),pmax:n($('#s_pmax').value),m1,m1Source:m1===null?'':m1===published&&catalog.id?M1_SOURCE:'Manual',powerModel:fromCatalog?'codexTotal':prior?.powerModel||(prior?'legacyM2':'codexTotal'),stat:$('#s_stat').value,targetDefense:$('#s_target').value,source:$('#s_source').value,notes:$('#s_notes').value,image:spellImageTemp,catalogId:catalog.id||catalog.catalogId||'',codexUrl:catalog.url||catalog.codexUrl||'',...(prior?.classUnlocked?{classUnlocked:true,classSourceIds:prior.classSourceIds||[],classSourceNames:prior.classSourceNames||[]}:{}) ,...(prior?.autoClassManaged?{autoClassManaged:true}:{})};
+  const s={id,name,tier:n($('#s_tier').value),type:$('#s_type').value,element:$('#s_element').value.trim(),mana:n($('#s_mana').value),turns:n($('#s_turns').value,1),hits:n($('#s_hits').value,1),pmin:n($('#s_pmin').value),pmax:n($('#s_pmax').value),m1,m1Source:m1===null?'':m1===published&&catalog.id?M1_SOURCE:'Manual',powerModel:fromCatalog?'codexTotal':prior?.powerModel||(prior?'legacyM2':'codexTotal'),stat:$('#s_stat').value,targetDefense:$('#s_target').value,source:$('#s_source').value,notes:$('#s_notes').value,image:spellImageTemp,catalogId:catalog.id||catalog.catalogId||'',codexUrl:catalog.url||catalog.codexUrl||'',...(prior?.classUnlocked?{classUnlocked:true,classSourceIds:prior.classSourceIds||[],classSourceNames:prior.classSourceNames||[]}:{}) ,autoClassManaged:false,autoBaseline:false};
   const ix=state.spells.findIndex(x=>x.id===id);if(ix>=0)state.spells[ix]=s;else state.spells.push(s);$('#spellDialog').close();renderAll();
 });
 
