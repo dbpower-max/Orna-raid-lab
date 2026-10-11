@@ -3291,6 +3291,24 @@ function effectiveAbilityElement(spell,load){
   if(spell?.stat==='ATT'&&(!listed||listed==='Physical'))return weaponAttackElement(load)||'Physical';
   return listed;
 }
+// Classify a damage action independently of whether the selected boss has calibrated stats.
+function isDamageAbility(spell){
+  if(!spell)return false;
+  const stat=String(spell.stat||'').toUpperCase();
+  return n(spell.pmax)>0 || Number(spell.m1)>0 || publishedSpellM1(spell.name)!==null ||
+    ((stat==='ATT'||stat==='MAG') && !!normalizeElement(spell.element));
+}
+function unavailableOutgoingReason(spell,boss){
+  if(!isDamageAbility(spell))return 'Utility / setup';
+  const missing=[];
+  if(spell.stat!=='ATT'&&spell.stat!=='MAG')missing.push('Damage stat unknown');
+  if(!(n(spell.pmax)>0))missing.push('Spell power unknown');
+  if(!(Number(spell.m1)>0))missing.push('Spell M1 unknown');
+  const defense=targetDefenseForSpell(spell);
+  const value=defense==='DEF'?boss.def:boss.res;
+  if(value===null||value===undefined||!Number.isFinite(Number(value)))missing.push(`Boss ${defense} unknown`);
+  return missing.length?missing.join(' · '):'Damage unavailable';
+}
 function damageRange(spell,stats,boss,opts={},load){
   if(!spell||spell.stat==='NONE'||!spell.pmax)return null;
   const m1=Number(spell.m1);
@@ -3489,7 +3507,7 @@ function doAnalyze(){
    </div>
    <div class="grid" style="margin-top:12px">
     <div class="card"><h2>Your actions → ${esc(boss.name)}</h2><div class="scroll"><table><thead><tr><th>Spell/skill</th><th>Predicted damage</th><th>Per turn</th><th>Notes</th></tr></thead><tbody>
-    ${offense.map(x=>`<tr><td><b>${esc(x.s.name)}</b><div class="source">${esc(x.r?.element||x.s.element||x.s.type)}</div></td><td>${x.r?`${x.r.min.toLocaleString()}–${x.r.max.toLocaleString()}`:boss.def==null&&targetDefenseForSpell(x.s)==='DEF'?'Boss DEF unknown':n(x.s.pmax)&&!(Number(x.s.m1)>0)?'M1 unknown':'Utility'}</td><td>${x.r?`${Math.round(((x.r.min+x.r.max)/2)/x.s.turns).toLocaleString()}`:'—'}</td><td>${esc(outgoingElementNote(x.r,x.s))}</td></tr>`).join('')}
+    ${offense.map(x=>`<tr><td><b>${esc(x.s.name)}</b><div class="source">${esc(x.r?.element||x.s.element||x.s.type)}</div></td><td>${x.r?`${x.r.min.toLocaleString()}–${x.r.max.toLocaleString()}`:unavailableOutgoingReason(x.s,boss)}</td><td>${x.r?`${Math.round(((x.r.min+x.r.max)/2)/x.s.turns).toLocaleString()}`:'—'}</td><td>${esc(outgoingElementNote(x.r,x.s))}</td></tr>`).join('')}
     </tbody></table></div>${best?`<div class="note good" style="margin-top:9px">Highest modeled raw damage per turn in this selected bar: <b>${esc(best.s.name)}</b>. This does not yet account for Weaved Elements sequencing, status proc value or setup-turn payoff.</div>`:''}</div>
     <div class="card"><h2>${esc(boss.name)} → you</h2><div class="scroll"><table><thead><tr><th>Boss action</th><th>Predicted damage</th><th>Uses</th><th>Elemental protection</th></tr></thead><tbody>
     ${boss.skills.map(sk=>{const r=incomingRange(sk,stats,boss,opts,load);return `<tr><td><b>${esc(sk.name)}</b><div class="source">${esc(sk.element)}</div></td><td>${sk.utility?'Utility / status':r?`${r.min.toLocaleString()}–${r.max.toLocaleString()}`:'M1 / power unknown'}</td><td>${sk.utility?'—':sk.type==='MAG'?'RES':'DEF'}</td><td>${sk.utility||!r?'—':esc(incomingElementNote(r,load))}</td></tr>`}).join('')}</tbody></table><div class="source">Boss ATT/MAG and move coefficients are provisional until checked against battle hits.</div></div>
