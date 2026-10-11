@@ -9,7 +9,7 @@ assert(start>=0&&end>start,'Automatic class spell logic not found');
 const region=html.slice(start,end);
 
 function runScenario(initialSpells=[]){
-  const run=new Function(`
+  const run=new Function('initial',`
     const DEFAULT_CLASS_IDS=[],AUTO_SKILL_CATALOG={},M1_SOURCE='test';
     const n=(v,d=0)=>Number(v)||d;
     const abilityKey=name=>String(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
