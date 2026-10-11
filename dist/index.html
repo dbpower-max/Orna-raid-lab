@@ -374,7 +374,7 @@ function compressImage(file,cb){
     im.src=e.target.result;
   };reader.readAsDataURL(file);
 }
-const DATA_FEED_REVISION=30;
+const DATA_FEED_REVISION=31;
 const starter=()=>({
   "meta": {
     "version": "0.2",
@@ -2503,6 +2503,82 @@ const FEED_PATCHES=[
       ],
       "image": "https://playorna.com/static/img/bosses/horseman_famine.png"
     }
+  },
+  {
+    "revision": 31,
+    "kind": "bossMoveCorrection",
+    "id": "b_first_horseman",
+    "value": {
+      "name": "Earthstrike",
+      "priorType": "MAG",
+      "type": "ATT",
+      "evidence": "Official Codex Skill; ATT/DEF via community skill mechanics",
+      "url": "https://playorna.com/codex/spells/earthstrike/"
+    }
+  },
+  {
+    "revision": 31,
+    "kind": "bossMoveCorrection",
+    "id": "b_first_horseman",
+    "value": {
+      "name": "Darkstrike",
+      "priorType": "MAG",
+      "type": "ATT",
+      "evidence": "Official Codex weapon Skill; ATT/DEF via community skill mechanics",
+      "url": "https://playorna.com/codex/spells/darkstrike/"
+    }
+  },
+  {
+    "revision": 31,
+    "kind": "bossMoveCorrection",
+    "id": "b_first_horseman",
+    "value": {
+      "name": "World's End",
+      "priorType": "MAG",
+      "type": "ATT",
+      "evidence": "Official Codex Skill; ATT/DEF inference from typical Skill mechanics (not directly confirmed for this move)",
+      "url": "https://playorna.com/codex/spells/worlds-end/"
+    }
+  },
+  {
+    "revision": 31,
+    "kind": "bossMoveCorrection",
+    "id": "b_fey_gazer",
+    "value": {
+      "name": "Arcane Strikes",
+      "priorType": "MAG",
+      "type": "ATT",
+      "evidence": "Official Codex multihit Skill; ATT/DEF via community skill mechanics",
+      "url": "https://playorna.com/codex/spells/arcane-strikes/"
+    }
+  },
+  {
+    "revision": 31,
+    "kind": "bossMoveCorrection",
+    "id": "b_last_titan",
+    "value": {
+      "name": "Catastrophe",
+      "priorType": "MAG",
+      "type": "ATT",
+      "priorElement": "Arcane",
+      "element": "",
+      "priorM1": 2,
+      "m1": null,
+      "evidence": "Official Codex Skill; older player observations report ATT/DEF. The Codex does not publish an element or M1.",
+      "url": "https://playorna.com/codex/spells/catastrophe/"
+    }
+  },
+  {
+    "revision": 31,
+    "kind": "bossMoveCorrection",
+    "id": "b_apollyon",
+    "value": {
+      "name": "Arcana II",
+      "priorType": "MAG",
+      "type": "HYBRID",
+      "evidence": "Official Codex explicitly says higher ATT or MAG; hybrid damage not independently modeled",
+      "url": "https://playorna.com/codex/spells/arcana-ii/"
+    }
   }
 ];
 const AUTO_SKILL_CATALOG={
@@ -2684,6 +2760,18 @@ function applyFeedUpdates(saved){
       const boss=saved.bosses.find(x=>x.id===p.id);
       if(boss)mergeBossFeedPatch(boss,p);
       else saved.bosses.push(JSON.parse(JSON.stringify(p.value)));
+    }
+    if(p.kind==='bossMoveCorrection'){
+      const boss=(saved.bosses||[]).find(b=>b.id===p.id);
+      const move=boss?.skills?.find(s=>s.name===p.value.name);
+      if(move?.type===p.value.priorType){
+        move.type=p.value.type;
+        // Respect user-customized elements and coefficients when migrating.
+        if(Object.prototype.hasOwnProperty.call(p.value,'priorElement')&&
+           move.element===p.value.priorElement)move.element=p.value.element;
+        if(Object.prototype.hasOwnProperty.call(p.value,'priorM1')&&
+           move.m1===p.value.priorM1)move.m1=p.value.m1;
+      }
     }
     if(p.kind==='videoBattle'){
       saved.videoBattles=Array.isArray(saved.videoBattles)?saved.videoBattles:[];
@@ -3441,6 +3529,7 @@ function damageRange(spell,stats,boss,opts={},load){
 }
 function unavailableIncomingReason(skill,boss){
   if(skill.utility)return 'Utility / status';
+  if(skill.type==='HYBRID')return 'Uses higher ATT or MAG · hybrid damage not modeled';
   const missing=[];
   const stat=skill.type==='MAG'?'mag':skill.type==='ATT'?'att':null;
   if(!stat)missing.push('Attack type unknown');
