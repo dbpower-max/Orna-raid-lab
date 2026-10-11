@@ -2768,7 +2768,27 @@ function startCustomSpell(){
 }
 $('#spellCustom').addEventListener('click',startCustomSpell);
 let gearQuery='';
-function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+let browserSaveWarningShown=false;
+function save(){
+  try{
+    localStorage.setItem(KEY,JSON.stringify(state));
+    if(browserSaveWarningShown){
+      browserSaveWarningShown=false;
+      const status=$('#feedStatus');
+      if(status)status.textContent='Saved in this browser';
+    }
+    return true;
+  }catch(error){
+    console.error('Orna Raid Lab could not save browser data',error);
+    const status=$('#feedStatus');
+    if(status){status.textContent='UNSAVED changes — export a database backup';status.setAttribute('role','alert');}
+    if(!browserSaveWarningShown){
+      browserSaveWarningShown=true;
+      alert('Your latest Orna Raid Lab changes could not be saved in this browser. Do not close or refresh the page until you export a database backup from Data & formulas. Browser storage may be full or unavailable.');
+    }
+    return false;
+  }
+}
 function gearBy(id){return state.gear.find(x=>x.id===id)}
 function spellBy(id){return state.spells.find(x=>x.id===id)}
 function loadBy(id){return state.gearLoadouts.find(x=>x.id===id)}
