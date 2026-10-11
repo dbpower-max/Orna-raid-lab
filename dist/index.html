@@ -360,10 +360,6 @@ function calcItem(item){
   return out;
 }
 function itemKey(k){return k==='def'?'defense':k==='res'?'resistance':k}
-function gearWardFactor(item){
-  const st=calcItem(item); return 1+n(st.ward)/100;
-}
-function imgTag(obj,letter='?'){return obj?.image?`<img class="thumb" src="${obj.image}" alt="">`:`<div class="thumb blank">${esc(letter)}</div>`}
 function compressImage(file,cb){
   if(!file)return cb('');
   const reader=new FileReader();
@@ -2902,8 +2898,6 @@ function loadoutNeedsMeasurement(load){
   const c=state.character;
   return !matchingCoreAnchors(c).some(a=>n(a.level)===n(c.level)&&a.measurementType?.startsWith('unequipped'))&&!measuredSnapshotForLoadout(load);
 }
-function linkRecordedDefaultSnapshot(){}
-function linkRecordedAchlysSnapshot(){}
 function statText(st){return ['hp','mana','att','mag','def','res','dex','ward'].filter(k=>n(st[k])!==0).map(k=>k==='ward'?`Ward ${st[k]}%`:`${STAT_LABEL[k]} ${st[k]}`).join(' · ')||'No numerical stats entered'}
 function renderAll(){syncAutomaticSpells();renderCharacter();renderGear();renderSpells();renderGearLoadouts();renderSpellLoadouts();renderRaids();renderBattleLog();renderData();const feed=$('#feedStatus');if(feed)feed.textContent=`Chat data · ${state.meta?.feedUpdatedAt||'current'}`;save()}
 function nav(tab){$$('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));$$('.section').forEach(s=>s.classList.toggle('active',s.id===tab))}
@@ -3194,9 +3188,6 @@ $('#spellForm').addEventListener('submit',e=>{
 
 const SLOT_AREA={'Weapon':'weapon','Off-hand':'offhand','Head':'head','Torso':'torso','Legs':'legs','Accessory 1':'accessory1','Accessory 2':'accessory2','Amity':'amity'};
 function gearLoadoutArt(g){return `<span class="loadout-gear-art">${gearIcon(g)}</span>`}
-function loadoutArt(obj,letter='?'){
-  return obj?.image?`<img class="loadout-art" src="${obj.image}" alt="">`:`<div class="loadout-art blank">${esc(letter)}</div>`;
-}
 function itemNoteBonuses(item){
   const notes=String(item?.notes||''),found=[];
   const pattern=/\b(View Distance|Elemental Damage Taken|Follower Summon Damage Taken|Self Damage Reduction|Faction Element Resistance|Monster Encounters|Luck Bonus|[A-Za-z]+ Damage Taken|[A-Za-z]+ Damage Reduction)\s*:\s*([+-]{0,2}\d+(?:\.\d+)?%)/gi;
@@ -4542,8 +4533,6 @@ function approveGearImportRows(rows){
   gearImportDrafts=gearImportDrafts.filter(d=>!rows.includes(d));const retained=new Set(gearImportDrafts.flatMap(d=>[d.url,d.cropUrl]).filter(Boolean));gearImportUrls=gearImportUrls.filter(url=>{if(retained.has(url))return true;URL.revokeObjectURL(url);return false});if(!gearImportDrafts.length)$('#gearImportFiles').value='';gearUi.category='All gear';gearQuery='';renderAll();renderGearImportReview();$('#gearImportStatus').textContent=`Saved: ${added} added, ${updated} updated.${gearImportDrafts.length?` ${gearImportDrafts.length} pending.`:''}`;
 };
 
-linkRecordedDefaultSnapshot();
-linkRecordedAchlysSnapshot();
 renderAll();
 loadOrnaCatalogs().then(()=>renderAll()).catch(()=>{});
 registerModelTools();
