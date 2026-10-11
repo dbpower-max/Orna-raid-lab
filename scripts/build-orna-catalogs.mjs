@@ -48,6 +48,17 @@ function powerParts(raw = '') {
   };
 }
 
+// The Codex distinguishes Skills from Spells; element alone does not
+// determine the offense/defense stat. Explicit hybrid mechanics take priority.
+function codexDamageStat(spell,description,power) {
+  if(!(power.pmax>0))return 'NONE';
+  if(/total damage is determined by both your attack and magic stats|use both your magic and attack stats/i.test(description))return 'COMPOSITE';
+  if(/either your magic or attack stat|either your attack or magic stat/i.test(description))return 'HYBRID';
+  if(/magic stat rather than attack|damage is based on .* magic stat/i.test(description))return 'MAG';
+  if(/attack stat rather than magic|damage is based on .* attack stat/i.test(description))return 'ATT';
+  return spell.spell_type==='skill'?'ATT':spell.spell_type==='spell'?'MAG':'NONE';
+}
+
 function spellRecord([id, spell]) {
   const text = translated(id);
   const name = text.name || words(id);
@@ -59,7 +70,7 @@ function spellRecord([id, spell]) {
   const gives = effectText(spell.gives);
   const cures = effectText(spell.cures);
   const requiresTurns = description.match(/requires\s+(\d+)\s+turn/i);
-  const stat = /magic stat/i.test(description) ? 'MAG' : /attack stat/i.test(description) ? 'ATT' : spell.stats?.power ? 'MAG' : 'NONE';
+  const stat = codexDamageStat(spell, description, power);
   const notes = [
     description,
     causes.length ? `Causes: ${causes.join(', ')}.` : '',
