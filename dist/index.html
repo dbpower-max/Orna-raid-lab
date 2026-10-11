@@ -2895,9 +2895,28 @@ function measuredUnequippedSnapshot(){
   const c=state.character,anchor=matchingCoreAnchors(c).find(a=>a.level===n(c.level));
   return anchor?.snapshotId?(state.combatSnapshots||[]).find(s=>s.id===anchor.snapshotId&&s.unequipped&&s.level===n(c.level)&&s.className===c.className&&s.specialization===c.specialization):null;
 }
+// Snapshot signature v2 captures the inputs that can affect equipped gear stats.
+// V1 snapshots remain in combatSnapshots as historical measurements, but cannot
+// silently override stats calculated using newer or edited gear information.
 function loadoutSignature(load){
   if(!load)return '';
-  return JSON.stringify(SLOTS.map(slot=>{const item=gearBy(load.slots?.[slot]);return item?[slot,item.id,item.level,item.qualityPct,item.observedLevel,item.observedStats,item.adornments,item.element,item.attackElement,item.resistElements]:[slot,'']}));
+  return JSON.stringify([2,SLOTS.map(slot=>{
+    const item=gearBy(load.slots?.[slot]);
+    if(!item)return [slot,''];
+    const catalog=catalogGearFor(item);
+    return [slot,{
+      id:item.id,name:item.name,slot:item.slot,tier:item.tier,
+      level:item.level,qualityPct:item.qualityPct,qualityPctKnown:item.qualityPctKnown,
+      qualityLabelOverride:item.qualityLabelOverride,
+      catalogId:item.catalogId,catalogCorrection:item.catalogCorrection,
+      base:item.base,isBoss:item.isBoss,
+      catalogBase:catalog?.base,catalogIsBoss:catalog?.isBoss,
+      observedLevel:item.observedLevel,observedStats:item.observedStats,
+      observedByLevel:item.observedByLevel,adornments:item.adornments,
+      element:item.element,attackElement:item.attackElement,
+      resistElements:item.resistElements
+    }];
+  })]);
 }
 function measuredSnapshotForLoadout(load){
   if(!load)return null;
