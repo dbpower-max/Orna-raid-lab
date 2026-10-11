@@ -3303,7 +3303,7 @@ function unavailableOutgoingReason(spell,boss){
   const missing=[];
   if(spell.stat!=='ATT'&&spell.stat!=='MAG')missing.push('Damage stat unknown');
   if(!(n(spell.pmax)>0))missing.push('Spell power unknown');
-  if(!(Number(spell.m1)>0))missing.push('Spell M1 unknown');
+  if(!(Number(spell.m1)>0))missing.push('Spell damage data unavailable');
   const defense=targetDefenseForSpell(spell);
   const value=defense==='DEF'?boss.def:boss.res;
   if(value===null||value===undefined||!Number.isFinite(Number(value)))missing.push(`Boss ${defense} unknown`);
@@ -3353,7 +3353,7 @@ function unavailableIncomingReason(skill,boss){
   const stat=skill.type==='MAG'?'mag':skill.type==='ATT'?'att':null;
   if(!stat)missing.push('Attack type unknown');
   else if(boss[stat]===null||boss[stat]===undefined||!Number.isFinite(Number(boss[stat])))missing.push(`Boss ${stat.toUpperCase()} unknown`);
-  if(!(Number(skill.m1)>0))missing.push('Move M1 unknown');
+  if(!(Number(skill.m1)>0))missing.push('Move damage data unavailable');
   if(!(n(skill.pmax)>0))missing.push('Move power unknown');
   return missing.length?missing.join(' · '):'Damage unavailable';
 }
@@ -3390,7 +3390,6 @@ function outgoingElementNote(result,spell){
   if(n(spell.turns)>1)notes.push(`${n(spell.turns)} turns`);
   if(isDamageAbility(spell)){
     if(n(spell.hits)>1)notes.push(`${n(spell.hits)} hits`);
-    if(n(spell.m1)>0)notes.push(`M1 ${n(spell.m1)}${spell.m1Source===M1_SOURCE?' (community)':''}`);
   }else{
     if(spell.type==='Debuff')notes.push('Setup turn');
     const description=String(spell.notes||'').split(/\n|\.\s+/)[0].trim().replace(/\.$/,'');
