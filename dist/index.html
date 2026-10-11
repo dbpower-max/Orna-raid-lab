@@ -2635,8 +2635,9 @@ function publishedSpellM1(name){return PUBLISHED_SPELL_M1[abilityKey(name)]??nul
 function catalogSpellModel(ability){const m1=publishedSpellM1(ability.name);return{m1,m1Source:m1===null?'':M1_SOURCE,powerModel:'codexTotal'}}
 function targetDefenseForSpell(spell){
   if(spell.targetDefense==='DEF'||spell.targetDefense==='RES')return spell.targetDefense;
-  // Magic weapon skills use MAG to attack DEF; other MAG spells normally attack RES.
-  return spell.stat==='ATT'||/^(magicstrikes|magicsword|magichammer)/.test(abilityKey(spell.name))?'DEF':'RES';
+  // A Physical element is not equivalent to an ATT-based Skill: magical
+  // Spells such as Magic Strikes/Sword/Hammer still use MAG against RES.
+  return spell.stat==='ATT'?'DEF':'RES';
 }
 const DEFAULT_CLASS_IDS=[];
 function spellFromCatalog(ability,classIds,classNames){return{id:uid('s'),catalogId:ability.id,codexUrl:ability.url,name:ability.name,tier:ability.tier,type:ability.type,element:ability.element||'',mana:n(ability.mana),turns:n(ability.turns,1),hits:n(ability.hits,1),pmin:n(ability.pmin),pmax:n(ability.pmax),...catalogSpellModel(ability),stat:ability.stat||'NONE',source:`Automatic class unlock · ${classNames.join(', ')}`,notes:ability.notes||'',image:ability.image||'',autoClassManaged:true,autoBaseline:false,classUnlocked:true,classSourceIds:classIds,classSourceNames:classNames}}
