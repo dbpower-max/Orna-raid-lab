@@ -28,7 +28,7 @@ function fixture(){
     const gearBy=id=>state.gear.find(x=>x.id===id);
     const catalogGearFor=item=>item.catalogId==='staff-codex'?catalog:null;
     ${actual}
-    return {loadoutSignature,measuredSnapshotForLoadout};
+    return {loadoutSignature,measuredSnapshotForLoadout,calibrationSnapshotMatchesLoadout};
   `);
   return {state,catalog,...setup(state,catalog),load:{id:'gear-loadout',slots:{Weapon:'staff'}}};
 }
@@ -107,4 +107,24 @@ t.state.gear[0].base.mag=175;
 const calculated=simulate(t.state,()=>t.measuredSnapshotForLoadout(t.load));
 assert.equal(calculated.mag,475,'Stale screenshot must not override updated baseline + equipment');
 assert.equal(t.state.combatSnapshots[0].id,'legacy','Historical measurement should remain intact');
-console.log('PASS: snapshot signature tracks gear/catalog edits; historical records retained; current stats recalculate from baseline');
+// Historical readings remain viewable, but must not be promoted as new
+// calibration evidence for a changed loadout, level, or class.
+const currentReading={...screenshot,gearSignature:t.loadoutSignature(t.load)};
+assert.equal(t.calibrationSnapshotMatchesLoadout(currentReading,t.load,160),true);
+assert.equal(t.calibrationSnapshotMatchesLoadout({...currentReading,gearSignature:legacy},t.load,160),false);
+assert.equal(t.calibrationSnapshotMatchesLoadout({...currentReading,level:159},t.load,160),false);
+assert.equal(t.calibrationSnapshotMatchesLoadout({...currentReading,unequipped:true},t.load,160),false);
+assert.equal(t.calibrationSnapshotMatchesLoadout({...currentReading,className:'Different'},t.load,160),false);
+assert.equal(t.calibrationSnapshotMatchesLoadout({...currentReading,gearLoadoutId:'different'},t.load,160),false);
+
+const handlerStart=html.indexOf("$('#calibrateCore').addEventListener('click',");
+const handlerEnd=html.indexOf("$('[data-class-id]')",handlerStart);
+assert(handlerStart>=0&&handlerEnd>handlerStart);
+const handler=html.slice(handlerStart,handlerEnd);
+assert(handler.includes('prior&&!calibrationSnapshotMatchesLoadout('),
+  'Calibration save must verify selected historical snapshot');
+assert(handler.indexOf('calibrationSnapshotMatchesLoadout(')<handler.indexOf('state.combatSnapshots.push('),
+  'Mismatch rejection must run before recording a new measurement');
+assert(html.includes('Older equipped Status readings are kept for history'),
+  'Character view must explain why historical readings are excluded');
+console.log('PASS: 18 snapshot and calibration checks; old measurements kept in history and new stats use current equipment');
