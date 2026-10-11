@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - "dist/**"
+      - "tests/**"
+      - "scripts/**"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch:
 
@@ -19,8 +21,26 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  verify:
+    name: Validate source, catalog, and regressions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Select Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate JavaScript syntax
+        run: |
+          node --check dist/equipment-import.js
+          node --check scripts/build-orna-catalogs.mjs
+      - name: Run regression suites
+        run: node --test tests/*.test.cjs
+
   deploy:
     name: Publish static site
+    needs: verify
     runs-on: ubuntu-latest
     environment:
       name: github-pages
