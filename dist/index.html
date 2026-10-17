@@ -3805,13 +3805,21 @@ function ownedCatalogGear(item){
   return state.gear.some(g=>g.catalogId===item.id||abilityKey(g.name).replace(/^(poor|broken|superior|famed|legendary|ornate)/,'').replace(/\d+$/,'')===itemName);
 }
 function bossStatusEffects(boss){
-  if(!ornaCatalogs?.abilities)return[];
   const found=new Map();
-  boss.skills.forEach(skill=>{
-    const ability=ornaCatalogs.abilities.find(a=>abilityKey(a.name)===abilityKey(skill.name));if(!ability)return;
-    parsedCauses(ability.notes).forEach(effect=>{
-      const key=normalizedEffect(effect.code),entry=found.get(key)||{code:effect.code,label:codexEffectLabel(effect.code),skills:[]};
-      entry.skills.push({name:skill.name,chance:effect.chance,url:ability.url});found.set(key,entry);
+  (boss.skills||[]).forEach(skill=>{
+    const ability=ornaCatalogs?.abilities?.find(a=>abilityKey(a.name)===abilityKey(skill.name));
+    // A boss's explicitly verified effects take priority over older generic catalog notes.
+    const explicit=Array.isArray(skill.statusEffects)&&skill.statusEffects.length;
+    const causes=explicit?skill.statusEffects.map(effect=>({
+      code:String(effect.status||'').replace(/↓/g,'d').replace(/↑/g,'u'),
+      label:String(effect.status||''),
+      chance:Number.isFinite(Number(effect.chancePct))?`${Number(effect.chancePct)}%`:''
+    })):parsedCauses(ability?.notes);
+    causes.forEach(effect=>{
+      const key=normalizedEffect(effect.code);
+      if(!key)return;
+      const entry=found.get(key)||{code:effect.code,label:effect.label||codexEffectLabel(effect.code),skills:[]};
+      entry.skills.push({name:skill.name,chance:effect.chance,url:ability?.url||''});found.set(key,entry);
     });
   });
   return [...found.values()];
@@ -3837,14 +3845,14 @@ function statusCure(effect){
   return cures.length?`<div class="source">Cures: ${cures.map(item=>`<a href="https://playorna.com/codex/items/${item.slug}/" target="_blank" rel="noopener">${esc(item.name)}</a>`).join(' · ')}</div>`:'<div class="source">Consumable cure not verified</div>';
 }
 function renderBossStatusGuide(boss){
-  if(!ornaCatalogs)return '<div class="note">Loading Codex status and immunity data…</div>';
+  if(!ornaCatalogs&&!(boss.skills||[]).some(skill=>skill.statusEffects?.length))return '<div class="note">Loading Codex status and immunity data…</div>';
   const effects=bossStatusEffects(boss),tier=characterTier(state.character.level);
   if(!effects.length)return '<div class="note">No status effects are listed for this raid boss in the current Codex data.</div>';
   return `<div class="row between"><div><h2>Status effects and protection</h2><div class="source">Immunity gear shown through your current tier (★${tier})</div></div><span class="badge">${effects.length} effects</span></div>
     <div class="scroll" style="margin-top:10px"><table><thead><tr><th>Effect</th><th>Inflicting skill</th><th>Equipment that nullifies it</th></tr></thead><tbody>${effects.map(effect=>{
       const gear=immunityGear(effect,true),allGear=immunityGear(effect,false);
       const protection=gear.length?gear.slice(0,5).map(item=>`<a href="${esc(item.url)}" target="_blank" rel="noopener"><b>${esc(item.name)}</b></a> <span class="source">★${item.tier} ${esc(item.slot)}${ownedCatalogGear(item)?' · Owned':''}</span>`).join('<br>'):allGear.length?`No matching item through ★${tier}. Higher-tier options exist.`:'No immunity equipment is listed in the current Codex data.';
-      return `<tr><td><b>${esc(effect.label)}</b>${statusCure(effect)}</td><td>${effect.skills.map(skill=>`<a href="${esc(skill.url)}" target="_blank" rel="noopener">${esc(skill.name)}</a>${skill.chance?` · ${esc(skill.chance)}`:''}`).join('<br>')}</td><td>${protection}</td></tr>`;
+      return `<tr><td><b>${esc(effect.label)}</b>${statusCure(effect)}</td><td>${effect.skills.map(skill=>`${skill.url?`<a href="${esc(skill.url)}" target="_blank" rel="noopener">${esc(skill.name)}</a>`:`<span>${esc(skill.name)}</span>`}${skill.chance?` · ${esc(skill.chance)}`:''}`).join('<br>')}</td><td>${protection}</td></tr>`;
     }).join('')}</tbody></table></div>
     `;
 }
