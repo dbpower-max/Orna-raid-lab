@@ -374,7 +374,7 @@ function compressImage(file,cb){
     im.src=e.target.result;
   };reader.readAsDataURL(file);
 }
-const DATA_FEED_REVISION=31;
+const DATA_FEED_REVISION=32;
 const starter=()=>({
   "meta": {
     "version": "0.2",
@@ -2579,6 +2579,31 @@ const FEED_PATCHES=[
       "evidence": "Official Codex explicitly says higher ATT or MAG; hybrid damage not independently modeled",
       "url": "https://playorna.com/codex/spells/arcana-ii/"
     }
+  },
+  {
+    "revision": 32,
+    "kind": "boss",
+    "id": "b_pumpkinhead",
+    "value": {
+      "level": 200,
+      "hp": 7650000,
+      "statusImmunities": [
+        "Poisoned",
+        "Bleeding",
+        "Burning",
+        "Frozen",
+        "Paralyzed",
+        "Rot",
+        "Cursed",
+        "Toxic",
+        "Blind",
+        "Asleep",
+        "Stunned",
+        "Blight"
+      ],
+      "source": "Official Orna Codex HP/skills + supplied in-game Codex screenshot · Oct 16, 2026",
+      "notes": "In-game Codex screenshot confirms ★8, level 200, 7,650,000 HP, both world raid and kingdom raid, The Hallowed event, and required level 3. Twelve status immunities are directly visible in the screenshot; the list may be incomplete because lower rows are cropped. Hidden ATT, MAG, DEF, RES, elemental affinities, and spell penetration M1 remain unknown. Previously recorded skills remain unchanged."
+    }
   }
 ];
 const AUTO_SKILL_CATALOG={
@@ -2806,7 +2831,7 @@ function applyFeedUpdates(saved){
     }
   });
   saved.meta.feedRevision=Math.max(applied,DATA_FEED_REVISION);
-  saved.meta.feedUpdatedAt='2026-09-28';
+  saved.meta.feedUpdatedAt='2026-10-16';
   return saved;
 }
 let ornaCatalogs=null,catalogPromise=null,selectedGearCatalog=null,selectedSpellCatalog=null;
