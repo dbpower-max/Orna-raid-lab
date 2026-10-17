@@ -1,5 +1,13 @@
 # ORNA_CHANGELOG
 
+## 2026-10-16 — Pumpkinhead complete drop list and Blast III calibration
+
+- Revision 34: added screenshot-confirmed 11 drops with item type, quality and tier; recorded Pumpkin Spider as the ★8 Hallowed minion and The Hallowed event description. Recorded both raid types and required level 3.
+- Corrected existing Pumpkinhead Blast III to **non-elemental** (MAG), M1/resistance penetration **2.0**, Tier 7, 120 mana, warm-up 1 turn / total cast 2 turns, effects **MAG ↓ (10%)** and **ATT ↓ (10%)**, single opponent. Existing other skill properties left unchanged.
+- Extended `bossMoveCorrection` to fill newly verified optional skill fields only when absent, preserving player-customized fields. Updated elemental-protection label for explicit non-elemental moves.
+- **Verified:** GitHub read-back; feed revision 34 parses; Pumpkinhead has 20 status immunities, 11 drops, one recorded minion, 12 original skills; Blast III migration and preservation of customized HP, drops, element, M1, mana; unchanged browser storage key. **Full browser/runtime regression not run.**
+- GitHub source only; **live published website not modified**.
+
 ## 2026-10-16 — Pumpkinhead follow-up screenshot
 
 - Advanced `dist/index.html` feed from revision 32 to 33 for existing boss `b_pumpkinhead`.
