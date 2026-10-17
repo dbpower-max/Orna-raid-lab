@@ -1,5 +1,15 @@
 # ORNA_CHANGELOG
 
+## 2026-10-16 — Pumpkinhead follow-up screenshot
+
+- Advanced `dist/index.html` feed from revision 32 to 33 for existing boss `b_pumpkinhead`.
+- Completed the screenshot-verified list of 20 status immunities (added Petrified, DEF ↓, DEF ↓↓, RES ↓↓, RES ↓, Starstruck, Doom, Confused).
+- Verified the 12 previously recorded boss skills; no changes to skill mechanics.
+- Added visible drop metadata: Skeleton Key, Currency, Famed, ★3. Drops are stored in the boss record but not yet given a dedicated display UI.
+- **Disputed:** Screenshot calls Blast III non-elemental; older boss model labels it Arcane. Left skill element unchanged pending a decision.
+- Verification **passed**: read back remote code, parsed feed, checked 20 immunities, skill preservation, custom edits preservation and unchanged `ornaRaidLab_v02` browser-storage key. Full runtime/browser regression **not run**.
+- GitHub mirror updated; live published website **not modified**.
+
 ## 2026-10-16 — Pumpkinhead raid boss screenshot
 
 - Updated `dist/index.html` data feed to revision 32 for the existing `b_pumpkinhead` record, without adding a duplicate boss.
