@@ -374,7 +374,7 @@ function compressImage(file,cb){
     im.src=e.target.result;
   };reader.readAsDataURL(file);
 }
-const DATA_FEED_REVISION=33;
+const DATA_FEED_REVISION=34;
 const starter=()=>({
   "meta": {
     "version": "0.2",
@@ -2643,6 +2643,131 @@ const FEED_PATCHES=[
       "source": "Official Orna Codex + supplied in-game Codex screenshots · Oct 16, 2026",
       "notes": "In-game Codex confirms ★8, level 200, HP 7,650,000, required level 3, World raid and Kingdom raid, The Hallowed. All 20 status immunities and the 12 existing skills are visible in the screenshots. Visible drop: Skeleton Key (Currency · Famed · ★3); drop rate and quantity unknown. Blast III screenshot says non-elemental, while the existing attack model labels its element Arcane; this discrepancy is unresolved and the existing attack configuration is unchanged. Hidden ATT, MAG, DEF, RES, elemental affinities, and separate penetration M1 values remain unknown."
     }
+  },
+  {
+    "revision": 34,
+    "kind": "boss",
+    "id": "b_pumpkinhead",
+    "value": {
+      "raidTypes": [
+        "World raid",
+        "Kingdom raid"
+      ],
+      "requiredLevel": 3,
+      "drops": [
+        {
+          "name": "Skeleton Key",
+          "type": "Currency",
+          "quality": "Famed",
+          "tier": 3
+        },
+        {
+          "name": "Hallowed Witch's Hat",
+          "type": "Head",
+          "quality": "Common",
+          "tier": 4
+        },
+        {
+          "name": "Panacea",
+          "type": "Curative",
+          "quality": "Rare",
+          "tier": 4
+        },
+        {
+          "name": "Bag of Treats",
+          "type": "Accessory",
+          "quality": "Common",
+          "tier": 5
+        },
+        {
+          "name": "Bag of Tricks",
+          "type": "Off-hand",
+          "quality": "Common",
+          "tier": 5
+        },
+        {
+          "name": "Hallowed Candle",
+          "type": "Consumable",
+          "quality": "Common",
+          "tier": 5
+        },
+        {
+          "name": "Hallowed Monster Tome",
+          "type": "Accessory",
+          "quality": "Common",
+          "tier": 5
+        },
+        {
+          "name": "X Elixir",
+          "type": "Curative",
+          "quality": "Famed",
+          "tier": 7
+        },
+        {
+          "name": "X Health Potion",
+          "type": "Curative",
+          "quality": "Famed",
+          "tier": 7
+        },
+        {
+          "name": "X Mana Potion",
+          "type": "Curative",
+          "quality": "Famed",
+          "tier": 7
+        },
+        {
+          "name": "Bedsheet",
+          "type": "Head",
+          "quality": "Common",
+          "tier": 8
+        }
+      ],
+      "minions": [
+        {
+          "name": "Pumpkin Spider",
+          "rarity": "Common",
+          "tier": 8,
+          "event": "The Hallowed"
+        }
+      ],
+      "event": {
+        "name": "The Hallowed",
+        "description": "Trick or Treat, Trick or Treat!"
+      },
+      "source": "Official Orna Codex + supplied in-game Codex screenshots · Oct 16, 2026",
+      "notes": "Screenshots confirm ★8, level 200, 7,650,000 HP, required level 3, World and Kingdom raids, The Hallowed, 20 status immunities, 12 skills, 11 drops, and Pumpkin Spider minion. Blast III's separate Codex screen confirms non-elemental MAG spell, resistance penetration M1 2.0, mana 120, 2-turn cast (1-turn warm-up), and 10% MAG↓/ATT↓ effects. ATT, MAG, DEF, RES, elemental affinities, and other skills' penetration remain unknown. The Base Stats section is cut off; none inferred."
+    }
+  },
+  {
+    "revision": 34,
+    "kind": "bossMoveCorrection",
+    "id": "b_pumpkinhead",
+    "value": {
+      "name": "Blast III",
+      "priorType": "MAG",
+      "type": "MAG",
+      "priorElement": "Arcane",
+      "element": "Non-elemental",
+      "priorM1": null,
+      "m1": 2,
+      "fields": {
+        "tier": 7,
+        "mana": 120,
+        "warmup": 1,
+        "targets": "A single opponent",
+        "statusEffects": [
+          {
+            "status": "MAG ↓",
+            "chancePct": 10
+          },
+          {
+            "status": "ATT ↓",
+            "chancePct": 10
+          }
+        ]
+      },
+      "evidence": "In-game Codex Blast III detail screenshot · Oct 16, 2026"
+    }
   }
 ];
 const AUTO_SKILL_CATALOG={
@@ -2836,6 +2961,10 @@ function applyFeedUpdates(saved){
            move.element===p.value.priorElement)move.element=p.value.element;
         if(Object.prototype.hasOwnProperty.call(p.value,'priorM1')&&
            move.m1===p.value.priorM1)move.m1=p.value.m1;
+        // Add newly verified Codex details without changing player-edited move fields.
+        if(p.value.fields)Object.entries(p.value.fields).forEach(([key,value])=>{
+          if(move[key]===undefined)move[key]=JSON.parse(JSON.stringify(value));
+        });
       }
     }
     if(p.kind==='videoBattle'){
