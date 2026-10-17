@@ -3738,7 +3738,7 @@ function unavailableIncomingReason(skill,boss){
 function incomingElementProtection(skill,load){
   if(skill.utility)return '—';
   const element=normalizeElement(skill.element);
-  if(!element)return 'Element unspecified';
+  if(!element)return String(skill.element||'').trim().toLowerCase()==='non-elemental'?'Non-elemental · no elemental protection':'Element unspecified';
   const gearProtection=loadoutElementProtections(load).some(x=>x.element===element);
   const factionProtection=element===factionElement();
   return incomingElementNote({element,gearProtection,factionProtection},load);
