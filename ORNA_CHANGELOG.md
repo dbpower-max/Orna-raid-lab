@@ -1,5 +1,13 @@
 # ORNA_CHANGELOG
 
+## 2026-10-16 — Complete Pumpkinhead UI and Codex spell integration
+
+- **Profile display:** Added expandable item-drop table (11 confirmed drops, names/types/qualities/tiers), Pumpkin Spider minion, raid types, required level and event; falls back gracefully when other bosses lack loot data.
+- **Status guide:** Raid profile and prevention table now read boss-specific verified statuses directly, including Blast III's MAG ↓ (10%) and ATT ↓ (10%), without needing the catalog first. Structured effects override stale generic text for that particular move. No probabilistic status is automatically treated as active.
+- **General spell catalog:** Corrected the canonical `dist/orna-catalogs.json` Blast III entry: non-elemental, resistance penetration 2.0, warm-up 1, mana 120, 2 turns, two 10% debuffs. Application import, automatic-class spells, source attribution, and custom spell-edit preservation now consume these verified fields.
+- **Verification:** The inline JavaScript parses; unit checks cover loot rendering, safe escaping, direct status effects, saved-record preservation, and verified spell model. Added `tests/pumpkinhead-integration.test.cjs`. Fixed a preexisting test that incorrectly assumed feed revision 31. GitHub Actions run **38989388152 succeeded** (all tests and GitHub Pages publish). No full interactive-browser regression was run.
+- **Publishing:** GitHub Pages pipeline republished the updated `dist/` site. The separate `https://orna-raid-lab.dbpower.chatgpt.site/` site was **not** changed.
+
 ## 2026-10-16 — Pumpkinhead complete drop list and Blast III calibration
 
 - Revision 34: added screenshot-confirmed 11 drops with item type, quality and tier; recorded Pumpkin Spider as the ★8 Hallowed minion and The Hallowed event description. Recorded both raid types and required level 3.
