@@ -2821,7 +2821,11 @@ const PUBLISHED_SPELL_M1={
 };
 const M1_SOURCE='Ornapedia community Skills & Spells table';
 function publishedSpellM1(name){return PUBLISHED_SPELL_M1[abilityKey(name)]??null}
-function catalogSpellModel(ability){const m1=publishedSpellM1(ability.name);return{m1,m1Source:m1===null?'':M1_SOURCE,powerModel:'codexTotal'}}
+function catalogSpellModel(ability){
+  const verified=Number(ability?.m1)>0&&ability.m1Source?Number(ability.m1):null;
+  const m1=verified??publishedSpellM1(ability.name);
+  return {m1,m1Source:verified!==null?ability.m1Source:m1===null?'':M1_SOURCE,powerModel:'codexTotal'};
+}
 function targetDefenseForSpell(spell){
   if(spell.targetDefense==='DEF'||spell.targetDefense==='RES')return spell.targetDefense;
   // A Physical element is not equivalent to an ATT-based Skill: magical
@@ -2829,7 +2833,7 @@ function targetDefenseForSpell(spell){
   return spell.stat==='ATT'?'DEF':'RES';
 }
 const DEFAULT_CLASS_IDS=[];
-function spellFromCatalog(ability,classIds,classNames){return{id:uid('s'),catalogId:ability.id,codexUrl:ability.url,name:ability.name,tier:ability.tier,type:ability.type,element:ability.element||'',mana:n(ability.mana),turns:n(ability.turns,1),hits:n(ability.hits,1),pmin:n(ability.pmin),pmax:n(ability.pmax),...catalogSpellModel(ability),stat:ability.stat||'NONE',source:`Automatic class unlock · ${classNames.join(', ')}`,notes:ability.notes||'',image:ability.image||'',autoClassManaged:true,autoBaseline:false,classUnlocked:true,classSourceIds:classIds,classSourceNames:classNames}}
+function spellFromCatalog(ability,classIds,classNames){return{id:uid('s'),catalogId:ability.id,codexUrl:ability.url,name:ability.name,tier:ability.tier,type:ability.type,element:ability.element||'',mana:n(ability.mana),turns:n(ability.turns,1),hits:n(ability.hits,1),pmin:n(ability.pmin),pmax:n(ability.pmax),...catalogSpellModel(ability),warmup:ability.warmup??null,statusEffects:ability.statusEffects||[],stat:ability.stat||'NONE',source:`Automatic class unlock · ${classNames.join(', ')}`,notes:ability.notes||'',image:ability.image||'',autoClassManaged:true,autoBaseline:false,classUnlocked:true,classSourceIds:classIds,classSourceNames:classNames}}
 // Switching unlocked classes may remove only untouched, unused automatic entries.
 // Keep user-edited records and spells equipped in a saved spell loadout.
 function shouldRetainFormerClassSpell(spell,abilityId){
@@ -2870,6 +2874,8 @@ function syncAutomaticSpells(){
         if(existing.autoBaseline||existing.autoClassManaged){
           ['tier','mana','turns','hits','pmin','pmax'].forEach(k=>{if(existing[k]===undefined||existing[k]===null||existing[k]===''||(n(existing[k])===0&&n(ability[k])>0))existing[k]=ability[k]});
           if(existing.m1===undefined||existing.m1===null)Object.assign(existing,catalogSpellModel(ability));
+          if(existing.warmup==null&&ability.warmup!=null)existing.warmup=ability.warmup;
+          if(!existing.statusEffects?.length&&ability.statusEffects?.length)existing.statusEffects=JSON.parse(JSON.stringify(ability.statusEffects));
           existing.type=existing.type||ability.type;existing.element=existing.element||ability.element||'';existing.stat=existing.stat||ability.stat||'NONE';existing.image=existing.image||ability.image||'';existing.notes=existing.notes||ability.notes||'';existing.source=`Automatic class unlock · ${sources.classNames.join(', ')}`;existing.autoClassManaged=true;existing.autoBaseline=false;
         }
       }else state.spells.push(spellFromCatalog(ability,sources.classIds,sources.classNames));
@@ -3058,7 +3064,8 @@ function showCatalogResults(kind){
 }
 function fillGearFromCatalog(row){selectedGearCatalog=row;$('#g_selected_name').textContent=`${row.name} · T${row.tier} · ${row.slot}`;$('#g_preview').src=row.image||transparentPixel();$('#g_catalog_status').textContent=`Selected ${row.name}. Save to add at baseline.`;$('#g_catalog_results').innerHTML=''}
 function fillSpellFromCatalog(row){
-  selectedSpellCatalog=row;const values={name:row.name,tier:row.tier,type:row.type,element:row.element,mana:row.mana,turns:row.turns,hits:row.hits,pmin:row.pmin,pmax:row.pmax,m1:publishedSpellM1(row.name)??'',stat:row.stat,source:'Official Codex',notes:row.notes};
+  selectedSpellCatalog=row;const model=catalogSpellModel(row);
+  const values={name:row.name,tier:row.tier,type:row.type,element:row.element,mana:row.mana,turns:row.turns,hits:row.hits,pmin:row.pmin,pmax:row.pmax,m1:model.m1??'',stat:row.stat,source:'Official Codex',notes:row.notes};
   Object.entries(values).forEach(([key,value])=>{const el=$('#s_'+key);if(el)el.value=value??''});spellImageTemp=row.image||'';$('#s_preview').src=spellImageTemp||transparentPixel();
   $('#s_target').value='AUTO';
   setSpellEditorVisible(true);$('#s_catalog_status').innerHTML=`Selected <b>${esc(row.name)}</b> from the Codex. Review the details, then save.`;$('#s_catalog_results').innerHTML='';
@@ -3509,7 +3516,8 @@ $('#spellForm').addEventListener('submit',e=>{
   const catalog=selectedSpellCatalog||prior||{};
   const name=$('#s_name').value.trim(),m1Input=$('#s_m1').value.trim(),m1=m1Input?Number(m1Input):null;
   const published=publishedSpellM1(name),fromCatalog=!!selectedSpellCatalog?.name;
-  const s={id,name,tier:n($('#s_tier').value),type:$('#s_type').value,element:$('#s_element').value.trim(),mana:n($('#s_mana').value),turns:n($('#s_turns').value,1),hits:n($('#s_hits').value,1),pmin:n($('#s_pmin').value),pmax:n($('#s_pmax').value),m1,m1Source:m1===null?'':m1===published&&catalog.id?M1_SOURCE:'Manual',powerModel:fromCatalog?'codexTotal':prior?.powerModel||(prior?'legacyM2':'codexTotal'),stat:$('#s_stat').value,targetDefense:$('#s_target').value,source:$('#s_source').value,notes:$('#s_notes').value,image:spellImageTemp,catalogId:catalog.id||catalog.catalogId||'',codexUrl:catalog.url||catalog.codexUrl||'',...(prior?.classUnlocked?{classUnlocked:true,classSourceIds:prior.classSourceIds||[],classSourceNames:prior.classSourceNames||[]}:{}) ,autoClassManaged:false,autoBaseline:false};
+  const codexModel=fromCatalog?catalogSpellModel(selectedSpellCatalog):null;
+  const s={id,name,tier:n($('#s_tier').value),type:$('#s_type').value,element:$('#s_element').value.trim(),mana:n($('#s_mana').value),turns:n($('#s_turns').value,1),hits:n($('#s_hits').value,1),pmin:n($('#s_pmin').value),pmax:n($('#s_pmax').value),m1,m1Source:m1===null?'':codexModel?.m1===m1?codexModel.m1Source:m1===published&&catalog.id?M1_SOURCE:'Manual',powerModel:fromCatalog?'codexTotal':prior?.powerModel||(prior?'legacyM2':'codexTotal'),warmup:fromCatalog?selectedSpellCatalog.warmup??null:prior?.warmup??null,statusEffects:fromCatalog?JSON.parse(JSON.stringify(selectedSpellCatalog.statusEffects||[])):prior?.statusEffects||[],stat:$('#s_stat').value,targetDefense:$('#s_target').value,source:$('#s_source').value,notes:$('#s_notes').value,image:spellImageTemp,catalogId:catalog.id||catalog.catalogId||'',codexUrl:catalog.url||catalog.codexUrl||'',...(prior?.classUnlocked?{classUnlocked:true,classSourceIds:prior.classSourceIds||[],classSourceNames:prior.classSourceNames||[]}:{}) ,autoClassManaged:false,autoBaseline:false};
   const ix=state.spells.findIndex(x=>x.id===id);if(ix>=0)state.spells[ix]=s;else state.spells.push(s);$('#spellDialog').close();renderAll();
 });
 
