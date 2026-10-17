@@ -3853,6 +3853,17 @@ function bossStatDisplay(boss,key){
   if(value===null||value===undefined||!Number.isFinite(Number(value)))return 'Unknown';
   return `${boss.estimatedStats?.includes(key)?'≈':''}${Number(value).toLocaleString()}`;
 }
+// Optional Codex roster metadata remains in each boss record; display it without guessing missing drops.
+function bossLootMarkup(boss){
+  const drops=Array.isArray(boss.drops)?boss.drops:[];
+  const minions=Array.isArray(boss.minions)?boss.minions:[];
+  const event=typeof boss.event==='string'?boss.event:boss.event?.name;
+  const summary=boss.raidTypes?.length||boss.requiredLevel!=null
+    ?`<div class="source">${boss.raidTypes?.length?`Raid: ${esc(boss.raidTypes.join(' · '))}`:''}${boss.requiredLevel!=null?` · Required level: ${esc(boss.requiredLevel)}`:''}</div>`:'';
+  const dropMarkup=drops.length?`<details class="raid-boss-details"><summary>Drops (${drops.length})</summary><div class="scroll"><table><thead><tr><th>Item</th><th>Type</th><th>Quality</th><th>Tier</th></tr></thead><tbody>${drops.map(item=>`<tr><td><b>${esc(item.name)}</b></td><td>${esc(item.type||'Unknown')}</td><td>${esc(item.quality||'Unknown')}</td><td>${item.tier!=null?`★${esc(item.tier)}`:'—'}</td></tr>`).join('')}</tbody></table></div></details>`:'';
+  const minionMarkup=minions.length?`<details class="raid-boss-details"><summary>Minions (${minions.length})</summary><div class="source">${minions.map(item=>`${esc(item.name)}${item.tier!=null?` · ★${esc(item.tier)}`:''}${item.rarity?` · ${esc(item.rarity)}`:''}${item.event?` · ${esc(item.event)}`:''}`).join('<br>')}</div></details>`:'';
+  return summary+(event?`<div class="source">Event: ${esc(event)}</div>`:'')+dropMarkup+minionMarkup;
+}
 function updateRaidBossProfile(){
   const boss=bossBy($('#raidBoss')?.value||state.bosses[0]?.id),box=$('#raidBossProfile');if(!boss||!box)return;
   const effects=bossStatusEffects(boss),affinity=bossAffinitySummary(boss),hasAffinity=affinity.weak.length||affinity.resistant.length||affinity.immune.length;
@@ -3861,6 +3872,7 @@ function updateRaidBossProfile(){
     <div class="note" style="margin-top:9px">${hasAffinity?[affinity.weak.length?`<b>Weak:</b> ${esc(affinity.weak.join(', '))}`:'',affinity.resistant.length?`<b>Resists:</b> ${esc(affinity.resistant.join(', '))}`:'',affinity.immune.length?`<b>Immune:</b> ${esc(affinity.immune.join(', '))}`:''].filter(Boolean).join(' · '):'<b>Elemental affinities:</b> Neutral'}</div>
     ${effects.length?`<div class="note" style="margin-top:9px"><b>Can inflict:</b> ${effects.map(x=>esc(x.label)).join(' · ')}</div>`:''}
     ${boss.statusImmunities?.length?`<div class="source boss-status-line"><b>Status immune:</b> ${boss.statusImmunities.map(esc).join(' · ')}</div>`:''}
+    ${bossLootMarkup(boss)}
     <details class="boss-source-details"><summary>Source and stat notes</summary><span class="source">${esc(boss.source||'Raid model')}</span><div class="note warn">${esc(boss.notes||'Hidden combat values are editable in the Data tab.')}</div></details>`;
 }
 const COMBAT_EFFECTS=[['up','↑',1.25],['up2','↑↑',1.5],['down','↓',0.8],['down2','↓↓',0.2],['tup','T. ↑',1.25],['tup2','T. ↑↑',1.5],['tdown','T. ↓',0.8],['tdown2','T. ↓↓',0.2]];
