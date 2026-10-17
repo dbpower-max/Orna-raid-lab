@@ -374,7 +374,7 @@ function compressImage(file,cb){
     im.src=e.target.result;
   };reader.readAsDataURL(file);
 }
-const DATA_FEED_REVISION=32;
+const DATA_FEED_REVISION=33;
 const starter=()=>({
   "meta": {
     "version": "0.2",
@@ -2603,6 +2603,45 @@ const FEED_PATCHES=[
       ],
       "source": "Official Orna Codex HP/skills + supplied in-game Codex screenshot · Oct 16, 2026",
       "notes": "In-game Codex screenshot confirms ★8, level 200, 7,650,000 HP, both world raid and kingdom raid, The Hallowed event, and required level 3. Twelve status immunities are directly visible in the screenshot; the list may be incomplete because lower rows are cropped. Hidden ATT, MAG, DEF, RES, elemental affinities, and spell penetration M1 remain unknown. Previously recorded skills remain unchanged."
+    }
+  },
+  {
+    "revision": 33,
+    "kind": "boss",
+    "id": "b_pumpkinhead",
+    "value": {
+      "statusImmunities": [
+        "Poisoned",
+        "Bleeding",
+        "Burning",
+        "Frozen",
+        "Paralyzed",
+        "Rot",
+        "Cursed",
+        "Toxic",
+        "Blind",
+        "Asleep",
+        "Stunned",
+        "Blight",
+        "Petrified",
+        "Def ↓",
+        "Def ↓↓",
+        "Res ↓↓",
+        "Res ↓",
+        "Starstruck",
+        "Doom",
+        "Confused"
+      ],
+      "drops": [
+        {
+          "name": "Skeleton Key",
+          "type": "Currency",
+          "quality": "Famed",
+          "tier": 3
+        }
+      ],
+      "source": "Official Orna Codex + supplied in-game Codex screenshots · Oct 16, 2026",
+      "notes": "In-game Codex confirms ★8, level 200, HP 7,650,000, required level 3, World raid and Kingdom raid, The Hallowed. All 20 status immunities and the 12 existing skills are visible in the screenshots. Visible drop: Skeleton Key (Currency · Famed · ★3); drop rate and quantity unknown. Blast III screenshot says non-elemental, while the existing attack model labels its element Arcane; this discrepancy is unresolved and the existing attack configuration is unchanged. Hidden ATT, MAG, DEF, RES, elemental affinities, and separate penetration M1 values remain unknown."
     }
   }
 ];
