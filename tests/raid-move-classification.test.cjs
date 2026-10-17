@@ -12,9 +12,9 @@ const sourceStarter=slice('const starter=','const FEED_PATCHES=');
 const sourcePatches=slice('const FEED_PATCHES=','const AUTO_SKILL_CATALOG=');
 const migration=slice('function mergeBossFeedPatch(','let ornaCatalogs=');
 const currentRevision=Number(html.match(/const DATA_FEED_REVISION=(\d+);/)?.[1]);
-assert.equal(currentRevision,31);
+assert(currentRevision>=31,'Raid corrections require feed revision 31 or later');
 const scenario=new Function(`
-  const DATA_FEED_REVISION=31;
+  const DATA_FEED_REVISION=${currentRevision};
   ${sourceStarter}
   ${sourcePatches}
   const CORE_KEYS=['hp','mana','att','mag','def','res','dex'];
@@ -47,7 +47,7 @@ for(const [id,name,type,url] of expectations){
 }
 
 const fresh=applyFeedUpdates(starter());
-assert.equal(fresh.meta.feedRevision,31);
+assert.equal(fresh.meta.feedRevision,currentRevision);
 for(const [id,name,type] of expectations)assert.equal(find(fresh,id,name)?.type,type);
 assert.equal(find(fresh,'b_last_titan','Catastrophe').m1,null,'Unverified M1 must be suppressed');
 assert.equal(find(fresh,'b_last_titan','Catastrophe').element,'','Non-Codex Arcane element must be removed');
@@ -69,7 +69,7 @@ applyFeedUpdates(old);
 for(const [id,name,type] of expectations)assert.equal(find(old,id,name).type,type);
 assert.equal(find(old,'b_last_titan','Catastrophe').m1,null);
 assert.equal(find(old,'b_last_titan','Catastrophe').element,'');
-assert.equal(old.meta.feedRevision,31);
+assert.equal(old.meta.feedRevision,currentRevision);
 const oneReload=JSON.stringify(old);applyFeedUpdates(old);assert.equal(JSON.stringify(old),oneReload);
 
 const manual=clone(old);
@@ -85,7 +85,7 @@ assert.equal(find(manual,'b_first_horseman','Darkstrike').type,'ATT');
 assert.equal(move.type,'ATT');
 assert.equal(move.m1,3,'Manually edited coefficient must remain');
 assert.equal(move.element,'Dark','Manually edited element must remain');
-assert.equal(manual.meta.feedRevision,31);
+assert.equal(manual.meta.feedRevision,currentRevision);
 
 const m1Start=html.indexOf('function unavailableIncomingReason(');
 const m1End=html.indexOf('function outgoingElementNote(',m1Start);
